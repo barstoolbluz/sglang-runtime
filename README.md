@@ -321,6 +321,20 @@ SGLANG_MODEL=Qwen/Qwen2.5-1.5B-Instruct flox activate -s
 No other configuration is needed — the hook auto-detects the bundled model.
 The profile banner will show `(bundled)` instead of `(will download from HF)`.
 
+### Tokenizer compatibility shim
+
+Models quantized with transformers ≥4.58 write `"tokenizer_class": "TokenizersBackend"` into
+`tokenizer_config.json`. SGLang 0.5.9's bundled transformers 4.57.6 does not recognize this
+class. The on-activate hook detects this and creates a shadow directory under
+`$FLOX_ENV_CACHE/sglang-compat/` containing symlinks to all model files plus a patched
+`tokenizer_config.json` with `"PreTrainedTokenizerFast"` as the tokenizer class.
+
+This runs automatically — no configuration needed. The shadow directory is cached and
+only rebuilt when the model changes.
+
+**Removal**: This shim should be removed once SGLang ships transformers ≥4.58. Track
+the SGLang version in `[install]` and the transformers version in the sglang Nix package.
+
 ### Gated models
 
 Some HuggingFace models (Llama, Gemma, etc.) require accepting a license
