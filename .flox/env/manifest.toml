@@ -61,6 +61,61 @@ on-activate = '''
 
   unset _sglang_store _sglang_python _pp _cpath _lpath _libdir
 
+  # ── Bundled HuggingFace model resolution ──────────────────────────
+  # If SGLANG_MODEL looks like a HF model ID (contains "/" and is not
+  # already a local path), check whether a matching model package is
+  # bundled in the Flox environment closure.  If found, rewrite
+  # SGLANG_MODEL to the snapshot path so SGLang uses the local copy
+  # instead of downloading from HuggingFace Hub.
+  #
+  # Two layouts are supported:
+  #   1. HF cache:  share/models/hub/models--<org>--<name>/snapshots/<hash>/
+  #   2. Flat:      share/models/<name>/   (model name = part after "/" in ID)
+  _sglang_model="${SGLANG_MODEL:-meta-llama/Llama-3.1-8B-Instruct}"
+  _resolved_dir=""
+  case "$_sglang_model" in
+    */*)
+      if [ ! -d "$_sglang_model" ]; then
+        # Try layout 1: HF cache (hub/models--<slug>/snapshots/<hash>/)
+        _hf_slug="${_sglang_model//\//-\-}"
+        _hub_dir="$FLOX_ENV/share/models/hub/models--${_hf_slug}"
+        if [ -d "$_hub_dir/snapshots" ]; then
+          if [ -f "$_hub_dir/refs/main" ]; then
+            _snap_hash="$(cat "$_hub_dir/refs/main")"
+            if [ -d "$_hub_dir/snapshots/$_snap_hash" ]; then
+              _resolved_dir="$_hub_dir/snapshots/$_snap_hash"
+            fi
+          fi
+          if [ -z "$_resolved_dir" ]; then
+            for _d in "$_hub_dir/snapshots"/*/; do
+              if [ -d "$_d" ]; then
+                _resolved_dir="${_d%/}"
+                break
+              fi
+            done
+          fi
+        fi
+        # Try layout 2: flat (share/models/<model-name>/)
+        if [ -z "$_resolved_dir" ]; then
+          _model_name="${_sglang_model#*/}"
+          _flat_dir="$FLOX_ENV/share/models/$_model_name"
+          if [ -d "$_flat_dir" ]; then
+            _resolved_dir="$_flat_dir"
+          fi
+        fi
+        # Apply resolution if a valid model dir was found
+        if [ -n "$_resolved_dir" ] && [ -f "$_resolved_dir/config.json" ]; then
+          export SGLANG_BUNDLED_FROM="$_sglang_model"
+          export SGLANG_MODEL="$_resolved_dir"
+          export HF_HUB_OFFLINE=1
+          echo "  bundled model: $_sglang_model -> $SGLANG_MODEL" >&2
+        fi
+        unset _hf_slug _hub_dir _snap_hash _d _model_name _flat_dir
+      fi
+      ;;
+  esac
+  unset _sglang_model _resolved_dir
+
   # FlashInfer JIT needs a writable cache dir (nix store is read-only)
   export FLASHINFER_JIT_DIR="${FLOX_ENV_CACHE:-$HOME/.cache/flox}/flashinfer-jit"
   mkdir -p "$FLASHINFER_JIT_DIR"
@@ -75,6 +130,11 @@ is-daemon = false
 [profile]
 common = '''
   echo "SGLang 0.5.9 runtime (all GPUs SM75-SM120, AVX2, CUDA 12.8)"
+  if [ -n "${SGLANG_BUNDLED_FROM:-}" ]; then
+    echo "  model: $SGLANG_BUNDLED_FROM (bundled)"
+  else
+    echo "  model: ${SGLANG_MODEL:-meta-llama/Llama-3.1-8B-Instruct} (will download from HF)"
+  fi
   echo "  sglang serve: flox activate -s  (set SGLANG_MODEL to choose model)"
   echo "  interactive:  python3.12"
 '''

@@ -44,9 +44,9 @@ curl http://127.0.0.1:30000/v1/chat/completions \
 
 ```
 manifest.toml
-  ├─ [install]   sglang from Flox catalog
+  ├─ [install]   sglang + optional model bundle from Flox catalog
   ├─ [vars]      SGLANG_HOST, SGLANG_PORT
-  ├─ [hook]      on-activate: resolve closure → PYTHONPATH + CUDA JIT env
+  ├─ [hook]      on-activate: resolve closure → PYTHONPATH + CUDA JIT env + model resolution
   ├─ [services]  sglang: python3.12 -m sglang.launch_server …
   └─ [profile]   banner with version info
 ```
@@ -58,7 +58,7 @@ The environment has no external scripts. Everything is driven by the manifest:
    the `sglang` binary on `PATH`.
 
 2. **Hook (on-activate)** — runs at activation time and sets up the Python
-   and CUDA environment in three phases:
+   and CUDA environment in four phases:
    - **Phase 1 — Isolation**: unsets `PYTHONPATH` and `PYTHONHOME` so no
      outer Python environment leaks in.
    - **Phase 2 — Python/PYTHONPATH**: resolves the sglang store path via
@@ -69,6 +69,11 @@ The environment has no external scripts. Everything is driven by the manifest:
      `CPATH` (CUDA headers), and `LIBRARY_PATH` (CUDA libraries) from
      `cuda12.8-*` store paths. Creates a writable `FLASHINFER_JIT_DIR`
      since the Nix store is read-only.
+   - **Phase 4 — Model resolution**: if `SGLANG_MODEL` is a HuggingFace
+     model ID (contains `/` and is not already a local path), checks for a
+     bundled model in two layouts: HF cache (`share/models/hub/`) then flat
+     (`share/models/<name>/`). If found, rewrites `SGLANG_MODEL` to the
+     local path and sets `HF_HUB_OFFLINE=1`.
 
 3. **Service** — `[services.sglang]` runs
    `python3.12 -m sglang.launch_server` with model, host, and port from
@@ -207,6 +212,9 @@ configured manually but are documented for reference.
 | `CPATH` | `cuda12.8-*` store paths | CUDA headers for JIT compilation |
 | `LIBRARY_PATH` | `cuda12.8-*` store paths | CUDA libraries for JIT linking |
 | `FLASHINFER_JIT_DIR` | `$FLOX_ENV_CACHE/flashinfer-jit` | Writable cache for FlashInfer JIT kernels |
+| `SGLANG_MODEL` | Bundled model snapshot path | Rewritten from HF model ID if bundled model found |
+| `SGLANG_BUNDLED_FROM` | Original HF model ID | Set when bundled model detected (used by profile banner) |
+| `HF_HUB_OFFLINE` | `1` (when bundled) | Prevents HF Hub network access when serving bundled model |
 
 ## Multi-GPU
 
@@ -242,6 +250,76 @@ SGLANG_MODEL=mistralai/Mistral-7B-Instruct-v0.3 flox activate -s
 # Local path
 SGLANG_MODEL=/data/models/my-fine-tune flox activate -s
 ```
+
+## Bundled models
+
+Model packages from the Flox catalog (or a custom catalog) can be installed
+alongside SGLang so that model weights are included in the Nix closure. When
+a bundled model is detected, the hook rewrites `SGLANG_MODEL` to the local
+snapshot path and sets `HF_HUB_OFFLINE=1` — no network access is needed at
+startup.
+
+### How it works
+
+The hook supports two model package layouts:
+
+**Layout 1 — HF cache** (used by `build-hf-models`):
+
+```
+$FLOX_ENV/share/models/hub/
+  models--meta-llama--Llama-3.1-8B-Instruct/
+    refs/main                    # commit hash
+    snapshots/<hash>/
+      config.json
+      model-00001-of-00004.safetensors
+      ...
+```
+
+**Layout 2 — Flat** (model name directory):
+
+```
+$FLOX_ENV/share/models/
+  Qwen2.5-1.5B-Instruct/
+    config.json
+    model.safetensors
+    tokenizer.json
+    ...
+```
+
+The on-activate hook converts `SGLANG_MODEL` (e.g.
+`meta-llama/Llama-3.1-8B-Instruct`) to the HF cache slug and checks for
+a matching snapshot directory. If not found, it falls back to checking
+`$FLOX_ENV/share/models/<model-name>/` (the part after `/` in the model
+ID). Both layouts are validated by checking for `config.json`.
+
+### Installing a model bundle
+
+Add the model package to `[install]` in `manifest.toml`, or install
+imperatively with `flox install`:
+
+```bash
+flox install flox/qwen2-5-1-5b-instruct
+```
+
+Or declaratively:
+
+```toml
+[install]
+sglang.pkg-path = "flox/sglang-python312-cuda12_8-all-avx2"
+sglang.systems = ["x86_64-linux"]
+
+qwen-1-5b.pkg-path = "flox/qwen2-5-1-5b-instruct"
+qwen-1-5b.systems = ["x86_64-linux"]
+```
+
+Then activate with the matching HF model ID:
+
+```bash
+SGLANG_MODEL=Qwen/Qwen2.5-1.5B-Instruct flox activate -s
+```
+
+No other configuration is needed — the hook auto-detects the bundled model.
+The profile banner will show `(bundled)` instead of `(will download from HF)`.
 
 ### Gated models
 
@@ -304,7 +382,13 @@ The on-activate hook performs the following steps in order:
    - `LIBRARY_PATH` → all `cuda12.8-*/lib` and `lib64` directories
      (`libcudart.so`, etc.)
 
-6. **Create FlashInfer JIT cache** — sets `FLASHINFER_JIT_DIR` to a
+6. **Resolve bundled model** — if `SGLANG_MODEL` looks like a HuggingFace
+   model ID (contains `/`), checks for a matching model package in two
+   layouts: HF cache (`share/models/hub/models--<slug>/snapshots/`) then
+   flat (`share/models/<name>/`). If found, rewrites `SGLANG_MODEL` to
+   the local path and sets `HF_HUB_OFFLINE=1` to prevent network access.
+
+7. **Create FlashInfer JIT cache** — sets `FLASHINFER_JIT_DIR` to a
    writable directory under `$FLOX_ENV_CACHE` (the Nix store is read-only,
    so JIT-compiled kernels need a mutable location).
 
