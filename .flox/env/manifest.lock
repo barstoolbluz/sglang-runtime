@@ -1,0 +1,41 @@
+{
+  "lockfile-version": 1,
+  "manifest": {
+    "version": 1,
+    "install": {
+      "sglang-python312-cuda12_8-all-avx2": {
+        "store-path": "/nix/store/vs486qjklkkwfds3151h2918x2xc2vqf-python3.12-sglang-python312-cuda12_8-all-avx2-0.5.9"
+      }
+    },
+    "vars": {
+      "SGLANG_HOST": "0.0.0.0",
+      "SGLANG_PORT": "30000"
+    },
+    "hook": {
+      "on-activate": "  # Isolate from any outer Python environment\n  unset PYTHONPATH\n  unset PYTHONHOME\n\n  # Resolve the sglang store path for PYTHONPATH construction\n  _sglang_store=\"$(dirname \"$(dirname \"$(readlink -f \"$(which sglang)\")\")\")\"\n\n  # Add Python 3.12 to PATH for interactive use\n  _sglang_python=\"$(nix-store -qR \"$_sglang_store\" | grep -F 'python3-3.12' | head -1)\"\n  export PATH=\"$_sglang_python/bin:$PATH\"\n\n  # Build PYTHONPATH from the full Nix closure for interactive python3.12\n  _pp=\"\"\n  for dep in $(nix-store -qR \"$_sglang_store\"); do\n    sp=\"$dep/lib/python3.12/site-packages\"\n    if [ -d \"$sp\" ]; then\n      _pp=\"${_pp:+$_pp:}$sp\"\n    fi\n  done\n  export PYTHONPATH=\"$_pp\"\n\n  # deep_gemm JIT needs CUDA_HOME to find nvcc\n  export CUDA_HOME=\"$(nix-store -qR \"$_sglang_store\" | grep -F 'cuda_nvcc' | head -1)\"\n\n  # JIT compilation needs CUDA headers (cuda_runtime.h, nv/target, etc.) and\n  # libraries (libcudart.so, etc.) from separate Nix store paths.\n  # Build CPATH and LIBRARY_PATH from all cuda12.8-* directories.\n  _cpath=\"\"\n  _lpath=\"\"\n  for dep in $(nix-store -qR \"$_sglang_store\"); do\n    case \"$dep\" in\n      *cuda12.8-*)\n        if [ -d \"$dep/include\" ]; then\n          _cpath=\"${_cpath:+$_cpath:}$dep/include\"\n        fi\n        for _libdir in \"$dep/lib\" \"$dep/lib64\"; do\n          if [ -d \"$_libdir\" ]; then\n            _lpath=\"${_lpath:+$_lpath:}$_libdir\"\n          fi\n        done\n        ;;\n    esac\n  done\n  export CPATH=\"${_cpath}${CPATH:+:$CPATH}\"\n  export LIBRARY_PATH=\"${_lpath}${LIBRARY_PATH:+:$LIBRARY_PATH}\"\n\n  unset _sglang_store _sglang_python _pp _cpath _lpath _libdir\n\n  # FlashInfer JIT needs a writable cache dir (nix store is read-only)\n  export FLASHINFER_JIT_DIR=\"${FLOX_ENV_CACHE:-$HOME/.cache/flox}/flashinfer-jit\"\n  mkdir -p \"$FLASHINFER_JIT_DIR\"\n"
+    },
+    "profile": {
+      "common": "  echo \"SGLang 0.5.9 runtime (all GPUs SM75-SM120, AVX2, CUDA 12.8)\"\n  echo \"  sglang serve: flox activate -s  (set SGLANG_MODEL to choose model)\"\n  echo \"  interactive:  python3.12\"\n"
+    },
+    "options": {
+      "systems": [
+        "x86_64-linux"
+      ],
+      "cuda-detection": false
+    },
+    "services": {
+      "sglang": {
+        "command": "exec python3.12 -m sglang.launch_server --model-path \"${SGLANG_MODEL:-meta-llama/Llama-3.1-8B-Instruct}\" --host $SGLANG_HOST --port $SGLANG_PORT",
+        "is-daemon": false
+      }
+    }
+  },
+  "packages": [
+    {
+      "install_id": "sglang-python312-cuda12_8-all-avx2",
+      "store_path": "/nix/store/vs486qjklkkwfds3151h2918x2xc2vqf-python3.12-sglang-python312-cuda12_8-all-avx2-0.5.9",
+      "system": "x86_64-linux",
+      "priority": 5
+    }
+  ]
+}

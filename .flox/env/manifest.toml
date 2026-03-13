@@ -1,0 +1,84 @@
+# SGLang runtime environment — all GPUs (SM75–SM120), AVX2
+# The sglang package is installed via store-path from the build output.
+# The sglang wrapper is self-contained (Nix sets PATH/PYTHONPATH internally).
+# The hook adds python3.12 and PYTHONPATH for interactive use.
+version = 1
+
+[install]
+sglang-python312-cuda12_8-all-avx2.store-path = "/nix/store/vs486qjklkkwfds3151h2918x2xc2vqf-python3.12-sglang-python312-cuda12_8-all-avx2-0.5.9"
+
+[vars]
+SGLANG_PORT = "30000"
+SGLANG_HOST = "0.0.0.0"
+
+[hook]
+on-activate = '''
+  # Isolate from any outer Python environment
+  unset PYTHONPATH
+  unset PYTHONHOME
+
+  # Resolve the sglang store path for PYTHONPATH construction
+  _sglang_store="$(dirname "$(dirname "$(readlink -f "$(which sglang)")")")"
+
+  # Add Python 3.12 to PATH for interactive use
+  _sglang_python="$(nix-store -qR "$_sglang_store" | grep -F 'python3-3.12' | head -1)"
+  export PATH="$_sglang_python/bin:$PATH"
+
+  # Build PYTHONPATH from the full Nix closure for interactive python3.12
+  _pp=""
+  for dep in $(nix-store -qR "$_sglang_store"); do
+    sp="$dep/lib/python3.12/site-packages"
+    if [ -d "$sp" ]; then
+      _pp="${_pp:+$_pp:}$sp"
+    fi
+  done
+  export PYTHONPATH="$_pp"
+
+  # deep_gemm JIT needs CUDA_HOME to find nvcc
+  export CUDA_HOME="$(nix-store -qR "$_sglang_store" | grep -F 'cuda_nvcc' | head -1)"
+
+  # JIT compilation needs CUDA headers (cuda_runtime.h, nv/target, etc.) and
+  # libraries (libcudart.so, etc.) from separate Nix store paths.
+  # Build CPATH and LIBRARY_PATH from all cuda12.8-* directories.
+  _cpath=""
+  _lpath=""
+  for dep in $(nix-store -qR "$_sglang_store"); do
+    case "$dep" in
+      *cuda12.8-*)
+        if [ -d "$dep/include" ]; then
+          _cpath="${_cpath:+$_cpath:}$dep/include"
+        fi
+        for _libdir in "$dep/lib" "$dep/lib64"; do
+          if [ -d "$_libdir" ]; then
+            _lpath="${_lpath:+$_lpath:}$_libdir"
+          fi
+        done
+        ;;
+    esac
+  done
+  export CPATH="${_cpath}${CPATH:+:$CPATH}"
+  export LIBRARY_PATH="${_lpath}${LIBRARY_PATH:+:$LIBRARY_PATH}"
+
+  unset _sglang_store _sglang_python _pp _cpath _lpath _libdir
+
+  # FlashInfer JIT needs a writable cache dir (nix store is read-only)
+  export FLASHINFER_JIT_DIR="${FLOX_ENV_CACHE:-$HOME/.cache/flox}/flashinfer-jit"
+  mkdir -p "$FLASHINFER_JIT_DIR"
+'''
+
+[services.sglang]
+# Use launch_server directly — `sglang serve` eagerly imports multimodal_gen
+# which pulls in diffusion deps (remote_pdb, diffusers, etc.) not needed for LLM serving.
+command = "exec python3.12 -m sglang.launch_server --model-path \"${SGLANG_MODEL:-meta-llama/Llama-3.1-8B-Instruct}\" --host $SGLANG_HOST --port $SGLANG_PORT"
+is-daemon = false
+
+[profile]
+common = '''
+  echo "SGLang 0.5.9 runtime (all GPUs SM75-SM120, AVX2, CUDA 12.8)"
+  echo "  sglang serve: flox activate -s  (set SGLANG_MODEL to choose model)"
+  echo "  interactive:  python3.12"
+'''
+
+[options]
+systems = ["x86_64-linux"]
+cuda-detection = false
