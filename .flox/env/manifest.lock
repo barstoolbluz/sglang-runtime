@@ -20,6 +20,7 @@
     },
     "vars": {
       "SGLANG_HOST": "0.0.0.0",
+      "SGLANG_MODEL": "microsoft/Phi-4-mini-instruct-FP8-TORCHAO",
       "SGLANG_PORT": "30000"
     },
     "hook": {
