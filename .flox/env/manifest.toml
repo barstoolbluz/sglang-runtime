@@ -1,11 +1,11 @@
 # SGLang runtime environment — all GPUs (SM75–SM120), AVX2
-# The sglang package is installed via store-path from the build output.
-# The sglang wrapper is self-contained (Nix sets PATH/PYTHONPATH internally).
-# The hook adds python3.12 and PYTHONPATH for interactive use.
+# The sglang package is installed from the Flox catalog (flox/sglang-python312-cuda12_8-all-avx2).
+# The hook resolves the Nix closure to build PYTHONPATH and set up CUDA JIT paths.
 version = 1
 
 [install]
-sglang-python312-cuda12_8-all-avx2.store-path = "/nix/store/vs486qjklkkwfds3151h2918x2xc2vqf-python3.12-sglang-python312-cuda12_8-all-avx2-0.5.9"
+sglang.pkg-path = "flox/sglang-python312-cuda12_8-all-avx2"
+sglang.systems = ["x86_64-linux"]
 
 [vars]
 SGLANG_PORT = "30000"

@@ -3,8 +3,11 @@
   "manifest": {
     "version": 1,
     "install": {
-      "sglang-python312-cuda12_8-all-avx2": {
-        "store-path": "/nix/store/vs486qjklkkwfds3151h2918x2xc2vqf-python3.12-sglang-python312-cuda12_8-all-avx2-0.5.9"
+      "sglang": {
+        "pkg-path": "flox/sglang-python312-cuda12_8-all-avx2",
+        "systems": [
+          "x86_64-linux"
+        ]
       }
     },
     "vars": {
@@ -32,9 +35,32 @@
   },
   "packages": [
     {
-      "install_id": "sglang-python312-cuda12_8-all-avx2",
-      "store_path": "/nix/store/vs486qjklkkwfds3151h2918x2xc2vqf-python3.12-sglang-python312-cuda12_8-all-avx2-0.5.9",
+      "attr_path": "sglang-python312-cuda12_8-all-avx2",
+      "broken": false,
+      "derivation": "/nix/store/bmbc7px9zqnqcp0lgd5229v33m0mwv8r-python3.12-sglang-python312-cuda12_8-all-avx2-0.5.9.drv",
+      "description": "SGLang 0.5.9 for all NVIDIA GPUs SM75-SM120 [CUDA 12.8, custom PyTorch AVX2]",
+      "install_id": "sglang",
+      "locked_url": "git@github.com:barstoolbluz/build-sglang.git?rev=4d4d4bb025206431e1c8c26223301c999a163536",
+      "name": "python3.12-sglang-python312-cuda12_8-all-avx2-0.5.9",
+      "pname": "sglang-python312-cuda12_8-all-avx2",
+      "rev": "4d4d4bb025206431e1c8c26223301c999a163536",
+      "rev_count": 10,
+      "rev_date": "2026-03-13T02:25:56Z",
+      "scrape_date": "2026-03-13T02:27:51.851488257Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "0.5.9",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "dist": "/nix/store/zzx14z2lzwfl5zni0im24ml0dyqagf72-python3.12-sglang-python312-cuda12_8-all-avx2-0.5.9-dist",
+        "out": "/nix/store/vs486qjklkkwfds3151h2918x2xc2vqf-python3.12-sglang-python312-cuda12_8-all-avx2-0.5.9"
+      },
       "system": "x86_64-linux",
+      "group": "toplevel",
       "priority": 5
     }
   ]
