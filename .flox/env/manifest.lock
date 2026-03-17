@@ -4,15 +4,13 @@
     "version": 1,
     "install": {
       "phi-4-mini-fp8": {
-        "pkg-path": "flox/phi-4-mini-instruct-fp8-sglang",
-        "pkg-group": "model",
+        "flake": "github:flox/sglang-dev#phi-4-mini-instruct-fp8-sglang",
         "systems": [
           "x86_64-linux"
         ]
       },
       "sglang": {
-        "pkg-path": "flox/sglang-python312-cuda12_8-all-avx2",
-        "pkg-group": "sglang",
+        "flake": "github:flox/sglang-dev#sglang-python312-cuda12_8-all-avx2",
         "systems": [
           "x86_64-linux"
         ]
@@ -44,61 +42,56 @@
   },
   "packages": [
     {
-      "attr_path": "phi-4-mini-instruct-fp8-sglang",
-      "broken": false,
-      "derivation": "/nix/store/7kndpq0y94dg6yp209y9mcmlvxdgx1a8-phi-4-mini-instruct-fp8-sglang-1.0.0.drv",
       "install_id": "phi-4-mini-fp8",
-      "locked_url": "git@github.com:barstoolbluz/build-hf-models.git?rev=ca88e1655077dab1a0e8bc3583d98bb2575be501",
-      "name": "phi-4-mini-instruct-fp8-sglang-1.0.0",
-      "pname": "phi-4-mini-instruct-fp8-sglang",
-      "rev": "ca88e1655077dab1a0e8bc3583d98bb2575be501",
-      "rev_count": 6,
-      "rev_date": "2026-03-13T23:07:14Z",
-      "scrape_date": "2026-03-13T23:12:22.654318324Z",
-      "stabilities": [
-        "unstable",
-        "staging",
-        "stable"
-      ],
-      "unfree": false,
-      "version": "1.0.0",
-      "outputs_to_install": [
+      "locked-url": "github:flox/sglang-dev/f5d3be7e9ac7907e72147e1a135c9259ab30dbc2?narHash=sha256-YMRC84eS8dJ8hAuBbv9ExLj1HtvVN1p4S2aESKi/nM4%3D",
+      "flake-description": "SGLang inference engine and model packages",
+      "locked-flake-attr-path": "packages.x86_64-linux.phi-4-mini-instruct-fp8-sglang",
+      "derivation": "/nix/store/z492yzb487pxzgilppgmgnkpj0yqk8np-phi-4-mini-instruct-fp8-sglang-1.0.0.drv",
+      "outputs": {
+        "out": "/nix/store/cz1rzcz2h8654b2bqs9y52cvyk0chvjz-phi-4-mini-instruct-fp8-sglang-1.0.0"
+      },
+      "output-names": [
         "out"
       ],
-      "outputs": {
-        "out": "/nix/store/hsp3523sjpxx91nlnrjsynznbibbvvn5-phi-4-mini-instruct-fp8-sglang-1.0.0"
-      },
+      "outputs-to-install": [
+        "out"
+      ],
+      "requested-outputs-to-install": [],
+      "package-system": "x86_64-linux",
       "system": "x86_64-linux",
-      "group": "model",
+      "name": "phi-4-mini-instruct-fp8-sglang-1.0.0",
+      "pname": "phi-4-mini-instruct-fp8-sglang",
+      "version": "1.0.0",
+      "broken": false,
+      "unfree": false,
       "priority": 5
     },
     {
-      "attr_path": "sglang-python312-cuda12_8-all-avx2",
-      "broken": false,
-      "derivation": "/nix/store/bmbc7px9zqnqcp0lgd5229v33m0mwv8r-python3.12-sglang-python312-cuda12_8-all-avx2-0.5.9.drv",
-      "description": "SGLang 0.5.9 for all NVIDIA GPUs SM75-SM120 [CUDA 12.8, custom PyTorch AVX2]",
       "install_id": "sglang",
-      "locked_url": "git@github.com:barstoolbluz/build-sglang.git?rev=4d4d4bb025206431e1c8c26223301c999a163536",
-      "name": "python3.12-sglang-python312-cuda12_8-all-avx2-0.5.9",
-      "pname": "sglang-python312-cuda12_8-all-avx2",
-      "rev": "4d4d4bb025206431e1c8c26223301c999a163536",
-      "rev_count": 10,
-      "rev_date": "2026-03-13T02:25:56Z",
-      "scrape_date": "2026-03-13T23:12:22.654323912Z",
-      "stabilities": [
-        "unstable"
-      ],
-      "unfree": false,
-      "version": "0.5.9",
-      "outputs_to_install": [
-        "out"
-      ],
+      "locked-url": "github:flox/sglang-dev/f5d3be7e9ac7907e72147e1a135c9259ab30dbc2?narHash=sha256-YMRC84eS8dJ8hAuBbv9ExLj1HtvVN1p4S2aESKi/nM4%3D",
+      "flake-description": "SGLang inference engine and model packages",
+      "locked-flake-attr-path": "packages.x86_64-linux.sglang-python312-cuda12_8-all-avx2",
+      "derivation": "/nix/store/bmbc7px9zqnqcp0lgd5229v33m0mwv8r-python3.12-sglang-python312-cuda12_8-all-avx2-0.5.9.drv",
       "outputs": {
         "dist": "/nix/store/zzx14z2lzwfl5zni0im24ml0dyqagf72-python3.12-sglang-python312-cuda12_8-all-avx2-0.5.9-dist",
         "out": "/nix/store/vs486qjklkkwfds3151h2918x2xc2vqf-python3.12-sglang-python312-cuda12_8-all-avx2-0.5.9"
       },
+      "output-names": [
+        "out",
+        "dist"
+      ],
+      "outputs-to-install": [
+        "out"
+      ],
+      "requested-outputs-to-install": [],
+      "package-system": "x86_64-linux",
       "system": "x86_64-linux",
-      "group": "sglang",
+      "name": "python3.12-sglang-python312-cuda12_8-all-avx2-0.5.9",
+      "pname": "sglang-python312-cuda12_8-all-avx2",
+      "version": "0.5.9",
+      "description": "SGLang 0.5.9 for all NVIDIA GPUs SM75-SM120 [CUDA 12.8, custom PyTorch AVX2]",
+      "broken": false,
+      "unfree": false,
       "priority": 5
     }
   ]
