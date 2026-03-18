@@ -149,7 +149,7 @@ on-activate = '''
 [services.sglang]
 # Use launch_server directly — `sglang serve` eagerly imports multimodal_gen
 # which pulls in diffusion deps (remote_pdb, diffusers, etc.) not needed for LLM serving.
-command = "exec python3.12 -m sglang.launch_server --model-path \"${SGLANG_MODEL:-meta-llama/Llama-3.1-8B-Instruct}\" --served-model-name \"${SGLANG_SERVED_NAME:-${SGLANG_BUNDLED_FROM:-default}}\" --host $SGLANG_HOST --port $SGLANG_PORT"
+command = "exec python3.12 -m sglang.launch_server --model-path \"${SGLANG_MODEL:-meta-llama/Llama-3.1-8B-Instruct}\" --served-model-name \"${SGLANG_SERVED_NAME:-${SGLANG_BUNDLED_FROM:-default}}\" --repetition-penalty 1.2 --host $SGLANG_HOST --port $SGLANG_PORT"
 is-daemon = false
 
 [profile]
